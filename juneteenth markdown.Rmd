@@ -1,0 +1,87 @@
+---
+title: "TidyTuesday_20200616"
+author: "Joseph Wooster"
+date: "6/17/2020"
+output: html_document
+---
+
+<style type="text/css">
+.main-container {
+  max-width: 1800px;
+  margin-left: auto;
+  margin-right: auto;
+}
+</style>
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(tidytuesdayR)
+library(tidyverse)
+library(plotly)
+library(gapminder)
+library(stringr)
+library(stringi)
+
+
+
+tuesdata <- tt_load('2020-06-16')
+
+african_names <- tuesdata$african_names
+blackpast <- tuesdata$blackpast
+census <- tuesdata$census
+slave_routes <- tuesdata$slave_routes
+
+blackpast <- blackpast %>%
+  group_by(year) %>%
+  mutate(year_event = row_number())
+
+
+blackpast$events <- gsub("U.S.", "United States", blackpast$events)
+blackpast$events <- gsub("Dr.", "Dr", blackpast$events)
+blackpast$events <- gsub("[.]", "<br>", blackpast$events)
+blackpast$events <- gsub("[,]", "<br>", blackpast$events)
+gsub("(.{5})", "<br> ", blackpast$events)
+blackpast$subject <- gsub("17th Century ", "", blackpast$subject)
+blackpast$subject <- gsub("18th Century ", "", blackpast$subject)
+blackpast$subject <- gsub("19th Century ", "", blackpast$subject)
+blackpast$subject <- gsub("20th Century ", "", blackpast$subject)
+
+```
+
+## Introduction
+
+I've been stretching myself in learning R over the last year now. One topic I've heard of but had yet to participate in was #TidyTuesday. This is a weekly event where members of the R for Data Science community can stretch their skills with new data projects each week. The goal of #TidyTuesday is not to create earth-shattering research, but instead to create an environment and forum for individuals to work on data science skills using R with real-world data.
+
+This is the first week I have participated in TidyTuesday which happens to also be the week of Juneteenth. With the holiday a few days away and current events, TidyTuesday focused on the importance of Juneteenth using data from the [US Census Archives](https://www.census.gov/content/dam/Census/library/working-papers/2002/demo/POP-twps0056.pdf), [Slave Voyages](https://slavevoyages.org/), and [Black Past](https://www.blackpast.org/african-american-history-timeline/). Check out the [TidyTuesday Project Page](https://github.com/rfordatascience/tidytuesday/blob/master/data/2020/2020-06-16/readme.md) for a better understanding of the goals of this week's project.
+
+During this week's challenge, I took the time to focus on the Black Past data. This dataset ["adds additional details around the slow granting of various rights to African-Americans, post-slavery brutality, violence and racism, as well as celebrations of achievements across many different categories."](https://github.com/rfordatascience/tidytuesday/blob/master/data/2020/2020-06-16/readme.md). Black Past's mission statement states Black Past ["is dedicated to providing the inquisitve public with comprehensive, reliable, and accurate information concerning the history of African Americans in the United States and people of African ancestry in other regions of the world. Is is the aim of the founders and sponsors to foster understanding through knowledge in order to generate constructive change in our society."](blackpast.org/about-us/mission-statement/)
+
+
+The following code was used to created an initial plot of historical events. In this case I used the y-axis to indicated the number of events in that year. I plotted each as a distinct point for the sake of making this interactive in the next section. The subject "Black Population" was filtered out as the majority of these events were simply census counts from 1790 on.
+
+Here is the code I used for plotting events.
+
+
+## Creating the Static Plot
+```{r static plot}
+p <- blackpast %>%
+  filter(subject != "Black Population") %>%
+  filter(!str_detect(year, "-")) %>%
+  ggplot(aes(x = year, y= year_event, color = subject, text = events))+
+  geom_point(show.legend =  FALSE)+
+  theme_bw()+
+  theme(axis.title.y = element_blank(), axis.text.y = element_blank(), axis.ticks.y = element_blank())+
+  ggtitle(label = "TidyTuesday: Juneteenth", subtitle = "Events in African American History")
+```
+
+## Creating the Interactive Plot
+
+After creating the static plot, I used the plotly package to create an interactive plot where you can hover over the graphic and see what the details of that event are. You can also filter based on the category on the right to see any specific categories you are interested in finding events around.
+
+```{r interactive}
+ggplotly(p, tooltip = c("year", "subject", "events")) %>%
+  rangeslider()
+```
+
+While this may be a simple result, my own goal through this week's project was to create an interactive plot using R.
